@@ -1,0 +1,416 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------------------------
+
+
+SW PRINCIPAL MULTICAPA VTP ABAJOO
+
+enable
+configure terminal
+hostname SW_VTP
+ip routing
+
+! --- A. VTP SERVER ---
+vtp domain juanmark
+vtp version 2
+vtp mode server
+
+! --- B. CREAR VLANS ---
+vlan 33
+ name GESTION_TI
+vlan 34
+ name GESTION_WLAN_APS
+vlan 35
+ name VENTAS_WIFI
+vlan 36
+ name COMPRAS
+vlan 37
+ name PRACTICANTES_WIFI
+vlan 200
+ name SALIDA_WAN
+exit
+
+! --- C. GATEWAYS (SVI) ---
+interface vlan 33
+ ip address 148.60.33.1 255.255.255.0
+ no shutdown
+exit
+interface vlan 34
+ ip address 148.60.34.1 255.255.255.0
+ no shutdown
+exit
+interface vlan 35
+ ip address 148.60.35.1 255.255.255.0
+ no shutdown
+exit
+interface vlan 36
+ ip address 148.60.36.1 255.255.255.0
+ no shutdown
+exit
+interface vlan 37
+ ip address 148.60.37.1 255.255.255.0
+ no shutdown
+exit
+
+! --- D. CONEXIÓN AL ROUTER (Capa 3 - Puerto 3) ---
+interface vlan 200
+ ip address 148.60.200.2 255.255.255.248
+ no shutdown
+exit
+ip route 0.0.0.0 0.0.0.0 148.60.200.1
+
+! Puerto 3: Hacia Router Centro
+interface GigabitEthernet1/0/1
+ switchport mode trunk
+ ip dhcp snooping trust
+ ip arp inspection trust
+ no shutdown
+exit
+
+! --- E. ETHERCHANNEL (PAgP) HACIA ARRIBA ---
+! Usaremos puertos 1 y 2 para conectar al Switch de Arriba
+interface range GigabitEthernet1/0/12-13
+ channel-protocol pagp
+ channel-group 1 mode desirable
+ no shutdown
+exit
+
+! Configuración de la Interfaz Lógica (Port-Channel 1)
+interface port-channel 1
+ switchport mode trunk
+ ip dhcp snooping trust           
+ ip arp inspection trust
+ no shutdown
+exit
+
+! --- F. DHCP & SEGURIDAD ---
+ip dhcp excluded-address 148.60.34.1
+ip dhcp excluded-address 148.60.34.2
+ip dhcp pool POOL_APS
+ network 148.60.34.0 255.255.255.0
+ default-router 148.60.34.1
+ option 43 ip 148.60.34.2
+exit
+
+ip dhcp snooping
+ip dhcp snooping vlan 33-37
+ip arp inspection vlan 33-37
+
+! Puerto 5: Servidor DHCP Físico (Si lo usas)
+interface GigabitEthernet1/0/5
+ switchport mode access
+ switchport access vlan 33
+ ip dhcp snooping trust
+ no shutdown
+exit
+
+------------------------------------------------------------------
+enable
+configure terminal
+hostname Centro
+
+
+! SEGURIDAD Y SSH 
+
+ip domain-name juanmark.com
+crypto key generate rsa modulus 1024
+username admin secret cisco
+line vty 0 4
+ transport input ssh
+ login local
+exit
+enable secret cisco
+service password-encryption
+
+
+! SERVIDOR DHCP 
+
+!  Exclusiones (Gateways y WLC)
+ip dhcp excluded-address 148.60.33.1
+ip dhcp excluded-address 148.60.34.1
+ip dhcp excluded-address 148.60.34.2
+ip dhcp excluded-address 148.60.35.1
+ip dhcp excluded-address 148.60.36.1
+ip dhcp excluded-address 148.60.37.1
+
+! Pool VLAN 33 
+ip dhcp pool POOL_TI
+ network 148.60.33.0 255.255.255.0
+ default-router 148.60.33.1
+ dns-server 8.8.8.8
+exit
+
+! Pool VLAN 34 
+ip dhcp pool POOL_APS
+ network 148.60.34.0 255.255.255.0
+ default-router 148.60.34.1
+ option 43 ip 148.60.34.2      
+ dns-server 8.8.8.8
+exit
+
+! Pool VLAN 35 
+ip dhcp pool POOL_VENTAS
+ network 148.60.35.0 255.255.255.0
+ default-router 148.60.35.1
+ dns-server 8.8.8.8
+exit
+
+! Pool VLAN 36 
+ip dhcp pool POOL_COMPRAS
+ network 148.60.36.0 255.255.255.0
+ default-router 148.60.36.1
+ dns-server 8.8.8.8
+exit
+
+!  Pool VLAN 37 
+ip dhcp pool POOL_PRACTICANTES
+ network 148.60.37.0 255.255.255.0
+ default-router 148.60.37.1
+ dns-server 8.8.8.8
+exit
+
+
+! 3. INTERFAZ LAN (Hacia Switch Core de Abajo)
+
+! Verifica si tu router usa g0/0 o g0/0/0
+interface GigabitEthernet0/0
+ ip address 148.60.200.1 255.255.255.248
+ no shutdown
+exit
+
+! Enlaces Seriales
+!  Hacia NOROESTE (Usamos la .6)
+interface Serial0/0/1
+ ip address 148.60.255.6 255.255.255.252
+ clock rate 128000
+ no shutdown
+exit
+
+! B. Hacia NORESTE (Usamos la .10)
+interface Serial0/1/0
+ ip address 148.60.255.10 255.255.255.252
+ clock rate 128000
+ no shutdown
+exit
+
+! C. Hacia SURESTE (Usamos la .17)
+interface Serial0/0/0
+ ip address 148.60.255.17 255.255.255.252
+ clock rate 128000
+ no shutdown
+exit
+
+! 5. RUTEO RIP
+router rip
+ version 2
+ no auto-summary
+ network 148.60.0.0
+ passive-interface GigabitEthernet0/0
+exit
+
+write
+---------------------------------------------------------------
+
+
+
+SW CAPA 2 ABAJO PRINCIPAL
+enable
+configure terminal
+hostname SW4
+no ip routing
+
+! 1. VTP CLIENTE
+vtp domain juanmark
+vtp version 2
+vtp mode client
+
+! 2. SEGURIDAD GLOBAL
+ip dhcp snooping
+ip dhcp snooping vlan 33-37
+! (Omitimos DAI si da problemas, si no: ip arp inspection vlan 33-37)
+
+! 3. UPLINK HACIA EL CORE (TRONCAL SIMPLE)
+! Asumo que usas el puerto Gigabit 0/1 para conectar hacia arriba.
+! Si usas otro, cambia "g0/1" por el tuyo.
+interface GigabitEthernet0/1
+ switchport mode trunk
+ ip dhcp snooping trust
+ no shutdown
+exit
+
+! 4. PUERTO PARA LA ANTENA (LAP)
+interface FastEthernet0/1
+ description ANTENA_WIFI
+ switchport mode access
+ switchport access vlan 34
+ no switchport port-security
+ no shutdown
+exit
+
+! 5. PUERTOS DE USUARIOS Y ROGUE (VLAN 36)
+interface range FastEthernet0/2-24
+ switchport mode access
+ switchport access vlan 36
+ spanning-tree portfast
+ 
+ ! Seguridad de Puerto
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+end
+write
+---------------------------------------------------------------
+SW MULTICAPA ARRIBA
+
+enable
+configure terminal
+hostname SW2
+
+no ip routing
+
+
+! VTP CLIENTE 
+
+vtp domain juanmark
+vtp version 2
+vtp mode client
+
+
+!  ETHERCHANNEL HACIA EL CORE (Bajada)
+
+interface range GigabitEthernet1/0/12-13
+ channel-protocol pagp
+ channel-group 1 mode desirable
+ no shutdown
+exit
+
+! Configuración de la Interfaz Lógica
+interface port-channel 1
+ switchport mode trunk
+ no shutdown
+exit
+
+
+! CONEXIÓN AL SWITCH CAPA 2 
+
+interface GigabitEthernet1/0/3
+ switchport mode trunk
+ no shutdown
+exit
+
+
+! CONEXIÓN A LA CONTROLADORA (WLC)
+interface GigabitEthernet1/0/2
+ switchport mode trunk
+ no shutdown
+exit
+
+
+!  CONEXIÓN AL SERVIDOR RADIUS
+!  VLAN de Gestión (33)
+
+interface GigabitEthernet1/0/1
+ switchport mode access
+ switchport access vlan 33
+ spanning-tree portfast
+ no shutdown
+exit
+
+end
+write
+---------------------------------------------------------------------------
+SWITCH CAPA 2 ARRIBA
+
+enable
+configure terminal
+hostname SW1
+no ip routing
+
+
+1. VTP CLIENTE (Recibe las VLANs)
+
+vtp domain juanmark
+vtp version 2
+vtp mode client
+
+
+!  SEGURIDAD GLOBAL
+
+ip dhcp snooping
+ip dhcp snooping vlan 33-37
+
+
+!  UPLINK HACIA EL MULTICAPA 
+
+interface GigabitEthernet0/1
+ switchport mode trunk
+ ip dhcp snooping trust
+ no shutdown
+exit
+
+
+! 4. PUERTO PARA LA ANTENA (LAP)
+interface g0/2
+ switchport mode access
+ switchport access vlan 34       
+ no switchport port-security      
+ no shutdown
+exit
+
+
+! 5. PUERTOS DE USUARIOS
+interface range FastEthernet0/2-24
+ switchport mode access
+ switchport access vlan 33        
+ spanning-tree portfast
+ 
+ ! Seguridad de Puerto
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+end
+write
+
