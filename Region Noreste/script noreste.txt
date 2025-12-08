@@ -78,6 +78,11 @@ exit
 
 
 
+
+
+
+
+--------------------------------------------------------------------------------
 SW ABAJO
 ! STP 
 spanning-tree mode pvst
@@ -127,6 +132,12 @@ exit
 
 
 
+
+
+
+
+
+--------------------------------------------------------------------------------
 SW Central (el que hara routeo intervlan)
 ip routing
 
@@ -232,5 +243,293 @@ interface range GigabitEthernet1/0/20-24
  switchport port-security mac-address sticky
 exit
 
+!ESTE SW TAMBIEN SERA HOST DE DHCP
+! 1. EXCLUIR DIRECCIONES 
+! Excluimos la .1 Gateway
+ip dhcp excluded-address 148.60.97.1
+ip dhcp excluded-address 148.60.98.1
+ip dhcp excluded-address 148.60.99.1
+ip dhcp excluded-address 148.60.100.1
+
+! Excluimos la IP del AP 
+ip dhcp excluded-address 148.60.98.254
+
+! 2. POOL PARA GESTIÓN VLAN 97
+ip dhcp pool POOL_TI
+ network 148.60.97.0 255.255.255.0
+ default-router 148.60.97.1
+ dns-server 148.60.0.10 
+ exit
+
+! 3. POOL PARA VENTAS VLAN 98
+ip dhcp pool POOL_VENTAS
+ network 148.60.98.0 255.255.255.0
+ default-router 148.60.98.1
+ dns-server 148.60.0.10
+ exit
+
+! 4. POOL PARA COMPRAS VLAN 99
+ip dhcp pool POOL_COMPRAS
+ network 148.60.99.0 255.255.255.0
+ default-router 148.60.99.1
+ dns-server 148.60.0.10
+ exit
+
+! 5. POOL PARA SERVICIOS VLAN 100
+ip dhcp pool POOL_SERVICIOS
+ network 148.60.100.0 255.255.255.0
+ default-router 148.60.100.1
+ dns-server 148.60.0.10
+ exit
+
+
+
+
+--------------------------------------------------------------------------------
+SW DERECHA
+enable
+configure terminal
+hostname SW_DERECHA
+
+!DESACTIVAMOS ROUTEO
+no ip routing
+
+
+vlan 97
+ name GESTION_TI
+vlan 98
+ name VENTAS
+vlan 99
+ name COMPRAS
+vlan 100
+ name SERVICIOS
+vlan 200
+ name CONEXION_ROUTERS
+exit
+
+!STP
+spanning-tree mode pvst
+
+!PUERTOS TRUNCALES
+interface range GigabitEthernet1/0/1-4
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport nonegotiate
+ no shutdown
+exit
+
+
+!PUERTOS DE ACCESO CON SEGURIDAD
+! VLAN 97 
+interface range GigabitEthernet1/0/5-9
+ switchport mode access
+ switchport access vlan 97
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+! VLAN 98 
+! AQUÍ VA EL AP
+interface range GigabitEthernet1/0/10-14
+ switchport mode access
+ switchport access vlan 98
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+! VLAN 99 
+interface range GigabitEthernet1/0/15-19
+ switchport mode access
+ switchport access vlan 99
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+! VLAN 100
+interface range GigabitEthernet1/0/20-24
+ switchport mode access
+ switchport access vlan 100
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
 end
-copy running-config startup-config
+write
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------
+ROUTER EL CABRITO
+enable
+configure terminal
+hostname ElCabrito
+
+! Seguridad y SSH 
+ip domain-name juanmark.com
+crypto key generate rsa modulus 1024
+username admin secret cisco
+line vty 0 4
+ transport input ssh
+ login local
+exit
+enable secret cisco
+service password-encryption
+
+! Interfaz hacia la Nube 
+! IP del enlace: 148.60.255.8/30, Usamos la .9
+interface Serial0/0/0
+ ip address 148.60.255.9 255.255.255.252
+ clock rate 128000
+ no shutdown
+exit
+
+! Interfaz hacia el Switch
+interface GigabitEthernet0/1
+ no shutdown
+exit
+interface GigabitEthernet0/1.200
+ encapsulation dot1Q 200
+ ip address 148.60.200.3 255.255.255.248
+ 
+ ! Configuración HSRP 
+ standby 1 ip 148.60.200.1
+ standby 1 priority 150
+ standby 1 preempt
+ no shutdown
+exit
+
+! Ruteo RIP
+router rip
+ version 2
+ no auto-summary
+ network 148.60.0.0
+ passive-interface GigabitEthernet0/1.200
+exit
+
+
+
+--------------------------------------------------------------------------------
+ROUTER LA VACA
+enable
+configure terminal
+hostname LaVaca
+
+! Seguridad y SSH 
+ip domain-name juanmark.com
+crypto key generate rsa modulus 1024
+username admin secret cisco
+line vty 0 4
+ transport input ssh
+ login local
+exit
+enable secret cisco
+service password-encryption
+
+! Interfaz hacia la Nube 
+interface Serial0/0/0
+ ip address 148.60.255.2 255.255.255.252
+ clock rate 128000
+ no shutdown
+exit
+
+! Interfaz hacia el Switch
+interface GigabitEthernet0/2
+ no shutdown
+exit
+interface GigabitEthernet0/2.200
+ encapsulation dot1Q 200
+ ip address 148.60.200.4 255.255.255.248
+ standby 1 ip 148.60.200.1
+ standby 1 priority 100
+ standby 1 preempt
+ no shutdown
+exit
+
+! Ruteo RIP
+router rip
+ version 2
+ no auto-summary
+ network 148.60.0.0
+ passive-interface GigabitEthernet0/2.200
+exit
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------
+ROUTER LA SILLA 
+enable
+configure terminal
+hostname LaSilla
+
+! Seguridad y SSH 
+ip domain-name juanmark.com
+crypto key generate rsa modulus 1024
+username admin secret cisco
+line vty 0 4
+ transport input ssh
+ login local
+exit
+enable secret cisco
+service password-encryption
+
+! Interfaz hacia la Nube
+interface Serial0/0/0
+ ip address 148.60.255.13 255.255.255.252
+ clock rate 128000
+ no shutdown
+exit
+
+! Interfaz hacia el Switch
+interface GigabitEthernet0/1
+ no shutdown
+exit
+interface GigabitEthernet0/1.200
+ encapsulation dot1Q 200
+ ip address 148.60.200.5 255.255.255.248
+ standby 1 ip 148.60.200.1
+ standby 1 priority 100
+ standby 1 preempt
+ no shutdown
+exit
+
+! Ruteo RIP
+router rip
+ version 2
+ no auto-summary
+ network 148.60.0.0
+ passive-interface GigabitEthernet0/1.200
+exit
+
+
+
+
