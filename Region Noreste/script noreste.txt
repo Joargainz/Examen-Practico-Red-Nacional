@@ -1,0 +1,236 @@
+Region Noreste
+
+
+SW ARRIBA
+enable
+configure terminal
+hostname SW_ARRIBA
+
+! Desactivar ruteo
+no ip routing
+
+vlan 97
+ name GESTION_TI
+vlan 98
+ name VENTAS
+vlan 99
+ name COMPRAS
+vlan 100
+ name SERVICIOS
+vlan 200
+ name CONEXION_ROUTERS
+exit
+
+! STP
+spanning-tree mode pvst
+spanning-tree vlan 97,100 root primary
+spanning-tree vlan 98,99 root secondary
+
+! TRUNCALES (1-4) 
+interface range GigabitEthernet1/0/1-4
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport nonegotiate
+ no shutdown
+exit
+
+! ACCESO Y SEGURIDAD
+interface range GigabitEthernet1/0/5-9
+ switchport mode access
+ switchport access vlan 97
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+interface range GigabitEthernet1/0/10-14
+ switchport mode access
+ switchport access vlan 98
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+interface range GigabitEthernet1/0/15-19
+ switchport mode access
+ switchport access vlan 99
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+interface range GigabitEthernet1/0/20-24
+ switchport mode access
+ switchport access vlan 100
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+
+
+
+SW ABAJO
+! STP 
+spanning-tree mode pvst
+spanning-tree vlan 99 root primary
+spanning-tree vlan 97,98,100 root secondary
+
+! TRUNCALES (1-4) 
+interface range GigabitEthernet1/0/1-4
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport nonegotiate
+ no shutdown
+exit
+
+! ACCESO Y SEGURIDAD
+interface range GigabitEthernet1/0/5-9
+ switchport mode access
+ switchport access vlan 97
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security violation restrict
+exit
+interface range GigabitEthernet1/0/10-14
+ switchport mode access
+ switchport access vlan 98
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security violation restrict
+exit
+interface range GigabitEthernet1/0/15-19
+ switchport mode access
+ switchport access vlan 99
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security violation restrict
+exit
+interface range GigabitEthernet1/0/20-24
+ switchport mode access
+ switchport access vlan 100
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security violation restrict
+exit
+
+
+
+
+
+
+SW Central (el que hara routeo intervlan)
+ip routing
+
+!CONFIGURACIÓN DE GATEWAYS (SVI)
+! IP de default gateway (.1)  
+
+interface vlan 97
+ ip address 148.60.97.1 255.255.255.0
+ no shutdown
+exit
+
+interface vlan 98
+ ip address 148.60.98.1 255.255.255.0
+ no shutdown
+exit
+
+interface vlan 99
+ ip address 148.60.99.1 255.255.255.0
+ no shutdown
+exit
+
+interface vlan 100
+ ip address 148.60.100.1 255.255.255.0
+ no shutdown
+exit
+
+!CONEXIÓN HACIA LOS ROUTERS 
+interface vlan 200
+ ip address 148.60.200.2 255.255.255.248
+ no shutdown
+exit
+
+
+! RUTEO ESTATICO Y DINÁMICO 
+! Ruta por defecto
+ip route 0.0.0.0 0.0.0.0 148.60.200.1
+
+! RIP
+router rip
+ version 2
+ no auto-summary
+ network 148.60.0.0
+exit
+
+spanning-tree mode pvst
+spanning-tree vlan 98 root primary
+spanning-tree vlan 97,99,100 root secondary
+
+
+interface range GigabitEthernet1/0/1-4
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport nonegotiate
+ no shutdown
+exit
+
+
+! VLAN 97
+interface range GigabitEthernet1/0/5-9
+ description ACCESO_TI
+ switchport mode access
+ switchport access vlan 97
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+! VLAN 98 
+interface range GigabitEthernet1/0/10-14
+ description ACCESO_VENTAS
+ switchport mode access
+ switchport access vlan 98
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+! VLAN 99
+interface range GigabitEthernet1/0/15-19
+ description ACCESO_COMPRAS
+ switchport mode access
+ switchport access vlan 99
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+! VLAN 100 
+interface range GigabitEthernet1/0/20-24
+ description ACCESO_SERVICIOS
+ switchport mode access
+ switchport access vlan 100
+ spanning-tree portfast
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+exit
+
+end
+copy running-config startup-config
