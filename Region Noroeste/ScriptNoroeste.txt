@@ -112,35 +112,33 @@ Switch 1
 
 enable
 configure terminal
-hostname SW1-Top
+hostname SW1
 no ip domain-lookup
 enable secret class
 
 ! --- VTP Client ---
 vtp domain juanmark
-vtp password cisco
 vtp mode client
 
 ! --- Enlace Troncal (Bajada a SW2) ---
-interface g0/1
+interface f0/1
  switchport trunk encapsulation dot1q
  switchport mode trunk
- switchport nonegotiate
  no shutdown
 
 ! --- Puertos de Acceso (Según colores de imagen) ---
 ! PC Morada (Ventas)
-interface fa0/1
+interface range fa0/2-7
  switchport mode access
  switchport access vlan 6
  spanning-tree portfast
 ! PC Azul (Marketing)
-interface fa0/2
+interface range fa0/8-13
  switchport mode access
  switchport access vlan 5
  spanning-tree portfast
 ! PC Naranja (Staff IT)
-interface fa0/3
+interface range fa0/14-19
  switchport mode access
  switchport access vlan 9
  spanning-tree portfast
@@ -166,38 +164,31 @@ Switch 2
 -------------------
 enable
 configure terminal
-hostname SW2-Medio
+hostname SW2
 no ip domain-lookup
 enable secret class
 
 ! --- VTP Client ---
 vtp domain juanmark
-vtp password cisco
 vtp mode client
 
 ! --- Enlaces Troncales (Hub Central) ---
-! G0/1 -> Hacia Router (¡CRITICO TRUNK!)
+! G0/1 -> Hacia Router 
 interface g0/1
- switchport trunk encapsulation dot1q
  switchport mode trunk
- switchport nonegotiate
  no shutdown
 ! G0/2 -> Hacia SW1 (Arriba)
-interface g0/2
- switchport trunk encapsulation dot1q
+interface f0/1
  switchport mode trunk
- switchport nonegotiate
  no shutdown
 ! G0/3 -> Hacia SW3 (Abajo - VTP Server)
-interface g0/3
- switchport trunk encapsulation dot1q
+interface f0/2
  switchport mode trunk
- switchport nonegotiate
  no shutdown
 
 ! --- Puertos de Acceso ---
 ! PC Naranja (Admin - Gestión TI)
-interface fa0/1
+interface range fa0/14-19
  switchport mode access
  switchport access vlan 9
  spanning-tree portfast
@@ -210,7 +201,7 @@ line vty 0 4
  login local
  transport input ssh
 !
-interface range fa0/3-24
+interface range fa0/14-19
  switchport port-security
  switchport port-security maximum 2
  switchport port-security violation restrict
@@ -222,14 +213,13 @@ Switch 3
 ----------------------------
 enable
 configure terminal
-hostname SW3-VTP-Server
+hostname SW3-VTPServer
 no ip domain-lookup
 enable secret class
 
 ! --- VTP SERVER (CONFIGURACIÓN CLAVE) ---
 vtp domain juanmark
 vtp version 2
-vtp password cisco
 vtp mode server
 
 ! --- CREACIÓN DE VLANS (Solo aquí) ---
@@ -244,78 +234,30 @@ vlan 9
 
 ! --- Enlaces Troncales ---
 ! G0/1 -> Hacia SW2 (Arriba)
-interface g0/1
- switchport trunk encapsulation dot1q
+interface f0/2
  switchport mode trunk
- switchport nonegotiate
  no shutdown
 ! G0/2 -> Hacia SW4 (Abajo)
-interface g0/2
- switchport trunk encapsulation dot1q
- switchport mode trunk
- switchport nonegotiate
- no shutdown
-
-! --- Puertos de Acceso (Según colores) ---
-! PC Azul (Mkt)
-interface fa0/1
- switchport mode access
- switchport access vlan 5
- spanning-tree portfast
-! PCs Moradas (Ventas)
-interface range fa0/2-3
- switchport mode access
- switchport access vlan 6
- spanning-tree portfast
-
-! --- Seguridad ---
-username admin secret class
-ip domain-name juanmark.com
-crypto key generate rsa modulus 1024
-line vty 0 4
- login local
- transport input ssh
-!
-interface range fa0/3-24
- switchport port-security
- switchport port-security maximum 2
- switchport port-security violation restrict
-exit
-
------------------
-Switch 4
---------------------
-
-enable
-configure terminal
-hostname SW4
-no ip domain-lookup
-enable secret class
-
-! --- VTP Client ---
-vtp domain juanmark
-vtp mode client
-
-! --- Enlace Troncal (Subida a SW3) ---
 interface f0/1
  switchport mode trunk
  no shutdown
 
 ! --- Puertos de Acceso (Según colores) ---
-! PC Morada (Ventas)
-interface range fa0/2-7
+! PC Azul (Mkt)
+interface range fa0/8-13
+ switchport mode access
+ switchport access vlan 5
+ spanning-tree portfast
+
+! PCs Moradas (Ventas)
+interface range fa0/3-7
  switchport mode access
  switchport access vlan 6
  spanning-tree portfast
-! PC Rosa (Compras)
+
 interface range fa0/20-24
  switchport mode access
  switchport access vlan 7
- spanning-tree portfast
-! PC Naranja (Staff IT)
-interface range fa0/14-19
- switchport mode access
- switchport access vlan 9
  spanning-tree portfast
 
 ! --- Seguridad ---
@@ -332,15 +274,3 @@ interface range fa0/3-24
  switchport port-security violation restrict
 exit
 
-
-
-
-
-enable
-configure terminal
-interface fa0/2
-no switchport port-security
-switchport mode trunk
-shutdown
-no shutdown
-exit
