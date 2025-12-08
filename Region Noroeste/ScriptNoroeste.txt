@@ -19,40 +19,39 @@ line vty 0 4
  transport input ssh
  exit
 
-! --- Excluir IPs (OBLIGATORIO para evitar conflictos) ---
+! Excluir IPs
 ip dhcp excluded-address 148.60.5.1 148.60.5.10
 ip dhcp excluded-address 148.60.6.1 148.60.6.10
 ip dhcp excluded-address 148.60.7.1 148.60.7.10
 ip dhcp excluded-address 148.60.9.1 148.60.9.10
 
 !DHCP IPv4 pools
-
 ip dhcp pool MKT
  network 148.60.5.0 255.255.255.0
  default-router 148.60.5.1
  dns-server 8.8.8.8
-!
+
 ip dhcp pool Ventas
  network 148.60.6.0 255.255.255.0
  default-router 148.60.6.1
  dns-server 8.8.8.8
-!
+
 ip dhcp pool Compras
  network 148.60.7.0 255.255.255.0
  default-router 148.60.7.1
  dns-server 8.8.8.8
-!
+
 ip dhcp pool Gestion
  network 148.60.9.0 255.255.255.0
  default-router 148.60.9.1
  dns-server 8.8.8.8
 
-! --- 3. DHCP IPv6 (Stateless) ---
+! DHCP IPv6 
 ipv6 dhcp pool GLOBAL_V6
  dns-server 2001:4860:4860::8888
  domain-name juanmark.com
 
-! --- 4. Subinterfaces (Router-on-a-Stick) ---
+! Subinterfaces (Router-on-a-Stick)
 interface g0/0
  no shutdown
 
@@ -62,10 +61,10 @@ interface g0/0.5
  ip address 148.60.5.1 255.255.255.0
  ipv6 address 2006:AFEA:B0CA:5::1/64
  ipv6 enable
- ipv6 nd other-config-flag  ! <-- Ayuda a que pidan DNS
+ ipv6 nd other-config-flag 
  ipv6 dhcp server GLOBAL_V6
  ipv6 rip JUANMARK_RIP enable
-!
+
 ! VLAN 6: Ventas
 interface g0/0.6
  encapsulation dot1q 6
@@ -75,7 +74,7 @@ interface g0/0.6
  ipv6 nd other-config-flag
  ipv6 dhcp server GLOBAL_V6
  ipv6 rip JUANMARK_RIP enable
-!
+
 ! VLAN 7: Compras
 interface g0/0.7
  encapsulation dot1q 7
@@ -85,7 +84,7 @@ interface g0/0.7
  ipv6 nd other-config-flag
  ipv6 dhcp server GLOBAL_V6
  ipv6 rip JUANMARK_RIP enable
-!
+
 ! VLAN 9: Gestión TI
 interface g0/0.9
  encapsulation dot1q 9
@@ -96,12 +95,12 @@ interface g0/0.9
  ipv6 dhcp server GLOBAL_V6
  ipv6 rip JUANMARK_RIP enable
 
-! --- 5. Ruteo RIPng y RIPv2 ---
+! Ruteo
 router rip
  version 2
  no auto-summary
  network 148.60.0.0
-!
+
 ipv6 router rip JUANMARK_RIP
 exit
 
@@ -116,41 +115,42 @@ hostname SW1
 no ip domain-lookup
 enable secret class
 
-! --- VTP Client ---
+! VTP
 vtp domain juanmark
 vtp mode client
 
-! --- Enlace Troncal (Bajada a SW2) ---
+! Enlace Troncal (Baja a SW2) ---
 interface f0/1
  switchport trunk encapsulation dot1q
  switchport mode trunk
  no shutdown
 
-! --- Puertos de Acceso (Según colores de imagen) ---
-! PC Morada (Ventas)
+! Puertos de Acceso
+! PC Ventas
 interface range fa0/2-7
  switchport mode access
  switchport access vlan 6
  spanning-tree portfast
-! PC Azul (Marketing)
+! PC Marketing
 interface range fa0/8-13
  switchport mode access
  switchport access vlan 5
  spanning-tree portfast
-! PC Naranja (Staff IT)
+! PC Staff IT
 interface range fa0/14-19
  switchport mode access
  switchport access vlan 9
  spanning-tree portfast
 
-! --- Seguridad SSH y Port Security ---
+! Seguridad SSH y Port Security
 username admin secret class
 ip domain-name juanmark.com
-crypto key generate rsa modulus 1024
+crypto key generate rsa 
+1024
 line vty 0 4
  login local
  transport input ssh
-!
+
 interface range fa0/1-24
  switchport port-security
  switchport port-security maximum 2
@@ -168,39 +168,40 @@ hostname SW2
 no ip domain-lookup
 enable secret class
 
-! --- VTP Client ---
+! VTP
 vtp domain juanmark
 vtp mode client
 
-! --- Enlaces Troncales (Hub Central) ---
-! G0/1 -> Hacia Router 
+! Enlaces Troncales
+! G0/1 Hacia Router 
 interface g0/1
  switchport mode trunk
  no shutdown
-! G0/2 -> Hacia SW1 (Arriba)
+! f0/1 Hacia SW1
 interface f0/1
  switchport mode trunk
  no shutdown
-! G0/3 -> Hacia SW3 (Abajo - VTP Server)
+! f0/2 -> Hacia SW3
 interface f0/2
  switchport mode trunk
  no shutdown
 
-! --- Puertos de Acceso ---
-! PC Naranja (Admin - Gestión TI)
+! Puertos de Acceso 
+! PC Admin
 interface range fa0/14-19
  switchport mode access
  switchport access vlan 9
  spanning-tree portfast
 
-! --- Seguridad SSH ---
+! Seguridad SSH 
 username admin secret class
 ip domain-name juanmark.com
-crypto key generate rsa modulus 1024
+crypto key generate rsa
+1024
 line vty 0 4
  login local
  transport input ssh
-!
+
 interface range fa0/14-19
  switchport port-security
  switchport port-security maximum 2
@@ -209,7 +210,6 @@ exit
 
 ---------------------------
 Switch 3
-
 ----------------------------
 enable
 configure terminal
@@ -217,12 +217,12 @@ hostname SW3-VTPServer
 no ip domain-lookup
 enable secret class
 
-! --- VTP SERVER (CONFIGURACIÓN CLAVE) ---
+! VTP SERVER
 vtp domain juanmark
 vtp version 2
 vtp mode server
 
-! --- CREACIÓN DE VLANS (Solo aquí) ---
+! CREACIÓN DE VLANS
 vlan 5
  name Marketing
 vlan 6
@@ -232,42 +232,44 @@ vlan 7
 vlan 9
  name Gestion_TI
 
-! --- Enlaces Troncales ---
-! G0/1 -> Hacia SW2 (Arriba)
+! Enlaces Troncales
+! f0/2 Hacia SW2 
 interface f0/2
  switchport mode trunk
  no shutdown
-! G0/2 -> Hacia SW4 (Abajo)
+! f0/1 Hacia SW4
 interface f0/1
  switchport mode trunk
  no shutdown
 
-! --- Puertos de Acceso (Según colores) ---
-! PC Azul (Mkt)
+! Puertos de Acceso 
+! PC Mkt
 interface range fa0/8-13
  switchport mode access
  switchport access vlan 5
  spanning-tree portfast
 
-! PCs Moradas (Ventas)
+! PC Venta
 interface range fa0/3-7
  switchport mode access
  switchport access vlan 6
  spanning-tree portfast
 
+! PC Compras
 interface range fa0/20-24
  switchport mode access
  switchport access vlan 7
  spanning-tree portfast
 
-! --- Seguridad ---
+! Seguridad
 username admin secret class
 ip domain-name juanmark.com
-crypto key generate rsa modulus 1024
+crypto key generate rsa 
+1024
 line vty 0 4
  login local
  transport input ssh
-!
+
 interface range fa0/3-24
  switchport port-security
  switchport port-security maximum 2
