@@ -1,0 +1,46 @@
+enable
+configure terminal
+hostname ElCabrito
+
+! -- SSH 
+username admin secret class
+ip domain-name juanmark.com
+crypto key generate rsa
+1024
+line vty 0 4
+ login local
+ transport input ssh
+
+
+! -- SUBINTERFAZ HSRP
+interface GigabitEthernet0/1.200
+ encapsulation dot1Q 200
+ ip address 148.60.200.3 255.255.255.248
+
+ ! Configuración HSRP
+ standby 1 ip 148.60.200.1
+ standby 1 priority 150    
+ standby 1 preempt        
+ no shutdown
+exit
+
+! -- 5. INTERFACES WAN (multiusuario) --
+interface Serial0/0/0
+ ip address 148.60.204.2 255.255.255.252
+ clock rate 2000000
+ no shutdown
+exit
+
+interface Serial0/0/1
+ no ip address
+ shutdown
+exit
+
+! -- RIP
+router rip
+ version 2
+ network 148.60.0.0
+ no auto-summary
+exit
+
+end

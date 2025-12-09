@@ -1,0 +1,53 @@
+enable
+configure terminal
+hostname LaSilla
+
+! -- SSH 
+username admin secret class
+ip domain-name juanmark.com
+crypto key generate rsa
+1024
+line vty 0 4
+ login local
+ transport input ssh
+
+
+! -- SUBINTERFAZ HSRP 
+interface GigabitEthernet0/1.200
+ encapsulation dot1Q 200
+ ip address 148.60.200.5 255.255.255.248
+
+ ! Configuración HSRP
+ standby 1 ip 148.60.200.1
+ standby 1 preempt
+ no shutdown
+exit
+
+! -- INTERFACES WAN (multiusuario) --
+!
+interface Serial0/0/0
+
+ ip address 148.60.202.1 255.255.255.252
+ clock rate 2000000
+ no shutdown
+exit
+
+interface Serial0/0/1
+ no ip address
+ shutdown
+exit
+
+! -- Rip
+router rip
+ version 2
+ redistribute static
+ network 148.60.0.0
+ no auto-summary
+exit
+
+! Rutas estáticas para alcanzar las VLANs internas (multiusuario)
+ip route 148.60.65.0 255.255.255.0 Serial0/0/0
+ip route 148.60.66.0 255.255.255.0 Serial0/0/0
+ip route 148.60.67.0 255.255.255.0 Serial0/0/0
+ip route 148.60.68.0 255.255.255.0 Serial0/0/0
+

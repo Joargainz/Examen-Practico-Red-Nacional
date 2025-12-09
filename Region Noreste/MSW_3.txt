@@ -1,0 +1,95 @@
+enable
+configure terminal
+hostname MSW_3
+
+! -- SSH 
+username admin secret class
+ip domain-name juanmark.com
+crypto key generate rsa
+1024
+line vty 0 4
+ login local
+ transport input ssh
+
+
+int vlan 100 
+ip address 148.60.100.102 255.255.255.0
+ip default-gateway 148.60.100.1
+no shut
+
+! -- CREACIÓN DE VLANS 
+vlan 97
+ name GESTION_TI
+vlan 98
+ name Ventas
+vlan 99
+ name COMPRAS
+vlan 100
+ name SERVICIOS
+vlan 200
+ name CONEXION_ROUTERS
+exit
+
+! -- CONFIGURACIÓN STP 
+spanning-tree mode pvst
+! MSW_3 es el ROOT BRIDGE 
+spanning-tree vlan 99 priority 24576
+! Prioridad secundaria para el resto
+spanning-tree vlan 97-98,100 priority 28672
+
+! -- PUERTOS TRONCALES 
+interface range GigabitEthernet1/0/1-4
+ switchport mode trunk
+ switchport nonegotiate
+ no shutdown
+exit
+
+! -- PUERTOS DE ACCESO 
+
+! VLAN 97: GESTION_TI
+interface range GigabitEthernet1/0/5-9
+ switchport access vlan 97
+ switchport mode access
+ switchport port-security
+ switchport port-security maximum 4
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ spanning-tree portfast
+ no shutdown
+exit
+
+! VLAN 98: VENTAS 
+interface range GigabitEthernet1/0/10-14
+ switchport access vlan 98
+ switchport mode access
+ switchport port-security
+ switchport port-security maximum 4
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ spanning-tree portfast
+ no shutdown
+exit
+
+! VLAN 99: COMPRAS 
+interface range GigabitEthernet1/0/15-19
+ switchport access vlan 99
+ switchport mode access
+ switchport port-security
+ switchport port-security maximum 4
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ spanning-tree portfast
+ no shutdown
+exit
+
+! VLAN 100: SERVICIOS 
+interface range GigabitEthernet1/0/20-24
+ switchport access vlan 100
+ switchport mode access
+ switchport port-security
+ switchport port-security maximum 4
+ switchport port-security mac-address sticky
+ switchport port-security violation restrict
+ spanning-tree portfast
+ no shutdown
+exit
