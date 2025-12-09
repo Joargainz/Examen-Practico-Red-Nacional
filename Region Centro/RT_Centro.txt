@@ -1,0 +1,105 @@
+RT_Centro
+
+
+enable
+configure terminal
+hostname RT_Centro
+
+! -- CONFIGURACIÓN BÁSICA Y SSH 
+service password-encryption
+enable secret cisco
+ip domain-name juanmark.com
+username admin secret cisco
+crypto key generate rsa modulus 1024
+
+! -- DHCP
+! Exclusiones de IP
+ip dhcp excluded-address 148.60.33.1
+ip dhcp excluded-address 148.60.34.1
+ip dhcp excluded-address 148.60.34.2
+ip dhcp excluded-address 148.60.35.1
+ip dhcp excluded-address 148.60.36.1
+ip dhcp excluded-address 148.60.37.1
+
+! Pool: GESTION de TI
+ip dhcp pool POOL_TI
+ network 148.60.33.0 255.255.255.0
+ default-router 148.60.33.1
+ dns-server 8.8.8.8
+exit
+
+! Pool: GESTION de WLAN 
+ip dhcp pool POOL_APS
+ network 148.60.34.0 255.255.255.0
+ default-router 148.60.34.1
+ option 43 ip 148.60.34.2
+ dns-server 8.8.8.8
+exit
+
+! Pool: VENTAS
+ip dhcp pool POOL_VENTAS
+ network 148.60.35.0 255.255.255.0
+ default-router 148.60.35.1
+ dns-server 8.8.8.8
+exit
+
+! Pool: COMPRAS
+ip dhcp pool POOL_COMPRAS
+ network 148.60.36.0 255.255.255.0
+ default-router 148.60.36.1
+ dns-server 8.8.8.8
+exit
+
+! Pool: PRACTICANTES
+ip dhcp pool POOL_PRACTICANTES
+ network 148.60.37.0 255.255.255.0
+ default-router 148.60.37.1
+ dns-server 8.8.8.8
+exit
+
+! -- AJUSTES DE ENRUTAMIENTO GENERAL
+no ip cef
+no ipv6 cef
+
+! -- CONFIGURACIÓN DE INTERFACES LAN
+interface GigabitEthernet0/0
+ ip address 148.60.200.1 255.255.255.248
+ no shutdown
+exit
+
+
+! -- CONFIGURACIÓN DE INTERFACES WAN (SERIALES)
+interface Serial0/0/0
+ ip address 148.60.255.17 255.255.255.252
+ clock rate 2000000
+ no shutdown
+exit
+
+interface Serial0/0/1
+ ip address 148.60.255.6 255.255.255.252
+ clock rate 2000000
+ shutdown
+exit
+
+
+interface Serial0/1/0
+ ip address 148.60.255.10 255.255.255.252
+ clock rate 2000000
+ no shutdown
+exit
+
+
+! -- PROTOCOLO DE ENRUTAMIENTO RIP
+router rip
+ version 2
+ passive-interface GigabitEthernet0/0
+ network 148.60.0.0
+ no auto-summary
+exit
+
+
+! -- LÍNEAS VTY (SSH)
+line vty 0 4
+ login local
+ transport input ssh
+exit
