@@ -1,9 +1,11 @@
+
+
 Router Itzamna
 enable
 configure terminal
 hostname Itzamna
 
-! --- 1. SEGURIDAD Y SSH ---
+! SEGURIDAD Y SSH 
 no ip domain-lookup
 ip domain-name juanmark.com
 username admin secret class
@@ -15,11 +17,11 @@ line vty 0 4
  transport input ssh
 exit
 
-! --- 2. SUBINTERFACES (ROUTER ON A STICK) ---
+! SUBINTERFACES (ROUTER ON A STICK)
 interface g0/0
  no shutdown
 
-! VLAN 65: Ventas (Itzamná es ACTIVO)
+! VLAN 65: Ventas 
 interface g0/0.65
  encapsulation dot1q 65
  ip address 148.60.65.2 255.255.255.0
@@ -27,8 +29,8 @@ interface g0/0.65
  standby 65 ip 148.60.65.1
  standby 65 priority 110
  standby 65 preempt
-!
-! VLAN 66: TI (Itzamná es ACTIVO)
+
+! VLAN 66: TI 
 interface g0/0.66
  encapsulation dot1q 66
  ip address 148.60.66.2 255.255.255.0
@@ -36,28 +38,26 @@ interface g0/0.66
  standby 66 ip 148.60.66.1
  standby 66 priority 110
  standby 66 preempt
-!
-! VLAN 67: Compras (Itzamná es RESPALDO - Prioridad default 100)
+
+! VLAN 67: Compras 
 interface g0/0.67
  encapsulation dot1q 67
  ip address 148.60.67.2 255.255.255.0
  ip helper-address 148.60.66.11
  standby 67 ip 148.60.67.1
-!
-! VLAN 68: MKT (Itzamná es RESPALDO - Prioridad default 100)
+
+! VLAN 68: MKT 
 interface g0/0.68
  encapsulation dot1q 68
  ip address 148.60.68.2 255.255.255.0
  ip helper-address 148.60.66.11
  standby 68 ip 148.60.68.1
 
-! --- 3. RUTEO RIP v2 ---
+! RUTEO RIP v2 
 router rip
  version 2
  no auto-summary
  network 148.60.0.0
-! (Nota: Agrega aquí la red de tu enlace WAN si es diferente, ej: network 10.0.0.0)
-exit
 
 
 ROUTER YUM KAAX/////////////////////////////////////
@@ -65,7 +65,7 @@ enable
 configure terminal
 hostname Yum-Kaax
 
-! --- 1. SEGURIDAD Y SSH ---
+! SEGURIDAD Y SSH 
 no ip domain-lookup
 ip domain-name juanmark.com
 username admin secret class
@@ -77,25 +77,25 @@ line vty 0 4
  transport input ssh
 exit
 
-! --- 2. SUBINTERFACES ---
+! SUBINTERFACES 
 interface g0/1
  no shutdown
 
-! VLAN 65: Ventas (Yum Kaax es RESPALDO - Prio 100)
+! VLAN 65: Ventas 
 interface g0/1.65
  encapsulation dot1q 65
  ip address 148.60.65.3 255.255.255.0
  ip helper-address 148.60.66.11
  standby 65 ip 148.60.65.1
-!
-! VLAN 66: TI (Yum Kaax es RESPALDO - Prio 100)
+
+! VLAN 66: TI 
 interface g0/1.66
  encapsulation dot1q 66
  ip address 148.60.66.3 255.255.255.0
  ip helper-address 148.60.66.11
  standby 66 ip 148.60.66.1
-!
-! VLAN 67: Compras (Yum Kaax es ACTIVO)
+
+! VLAN 67: Compras 
 interface g0/1.67
  encapsulation dot1q 67
  ip address 148.60.67.3 255.255.255.0
@@ -103,8 +103,8 @@ interface g0/1.67
  standby 67 ip 148.60.67.1
  standby 67 priority 110
  standby 67 preempt
-!
-! VLAN 68: MKT (Yum Kaax es ACTIVO)
+
+! VLAN 68: MKT 
 interface g0/1.68
  encapsulation dot1q 68
  ip address 148.60.68.3 255.255.255.0
@@ -113,218 +113,9 @@ interface g0/1.68
  standby 68 priority 110
  standby 68 preempt
 
-! --- 3. RUTEO RIP v2 ---
+! RUTEO RIP v2 
 router rip
  version 2
  no auto-summary
  network 148.60.0.0
-exit
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-enable
-configure terminal
-hostname SW1-DHCP
-no ip domain-lookup
-
-!  VTP y VLANs
-vtp domain juanmark
-vtp version 2
-vtp mode server
-vlan 65
- name Ventas
-vlan 66
- name TI
-vlan 67
- name Compras
-vlan 68
- name MKT
-exit
-
-! STP
-! Jefe (Root) de Ventas y TI. Respaldo de las otras.
-spanning-tree mode pvst
-spanning-tree vlan 65,66 root primary
-spanning-tree vlan 67,68 root secondary
-
-! SERVIDOR DHCP (Para toda la red)
-service dhcp
-ip dhcp excluded-address 148.60.65.1 148.60.65.10
-ip dhcp excluded-address 148.60.66.1 148.60.66.20
-ip dhcp excluded-address 148.60.67.1 148.60.67.10
-ip dhcp excluded-address 148.60.68.1 148.60.68.10
-
-! Pools
-ip dhcp pool Ventas
- network 148.60.65.0 255.255.255.0
- default-router 148.60.65.1
- dns-server 8.8.8.8
-
-ip dhcp pool TI
- network 148.60.66.0 255.255.255.0
- default-router 148.60.66.1
- dns-server 8.8.8.8
-
-ip dhcp pool Compras
- network 148.60.67.0 255.255.255.0
- default-router 148.60.67.1
- dns-server 8.8.8.8
-
-ip dhcp pool MKT
- network 148.60.68.0 255.255.255.0
- default-router 148.60.68.1
- dns-server 8.8.8.8
-
-! INTERFAZ DE GESTIÓN 
-interface vlan 66
- ip address 148.60.66.11 255.255.255.0
- no shutdown
-ip default-gateway 148.60.66.1
-
-! ==========================================
-! 5. CONEXIONES FÍSICAS (Ajusta los puertos)
-! ==========================================
-
-! Troncal para el  ROUTER ITZAMNÁ
-interface GigabitEthernet1/0/1
- switchport mode trunk
- switchport nonegotiate
- no shutdown
-
-! WLC 
-interface GigabitEthernet1/0/24
- switchport mode trunk
- switchport trunk native vlan 66
- no shutdown
-
-! ETHERCHANNEL AL SWITCH 0 (Enlace Vertical)
-interface range GigabitEthernet1/0/2-3
- channel-group 10 mode desirable
- no shutdown
-
-interface port-channel 10
- switchport mode trunk
- switchport nonegotiate
-
-! ETHERCHANNEL AL SWITCH 2
-interface range GigabitEthernet1/0/4-5
- channel-group 2 mode desirable
- no shutdown
-
-interface port-channel 2
- switchport mode trunk
- switchport nonegotiate
-
-! ETHERCHANNEL AL SWITCH 5
-interface range GigabitEthernet1/0/6-7
- channel-group 5 mode desirable
- no shutdown
-
-interface port-channel 5
- switchport mode trunk
- switchport nonegotiate
-
-! CONEXIONES SIMPLES A SWITCH 3 Y 4
-interface GigabitEthernet1/0/8
- switchport mode trunk
- switchport nonegotiate
-
-interface GigabitEthernet1/0/9
- switchport mode trunk
- switchport nonegotiate
-
-! Seguridad SSH
-username admin secret class
-line vty 0 4
- login local
- transport input ssh
-exit
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-enable
-configure terminal
-hostname SW0-Dist-B
-no ip domain-lookup
-
-! --- 1. VTP (Client) ---
-vtp domain juanmark
-vtp mode client
-
-! --- 2. STP (Spanning Tree) ---
-! Jefe (Root) de Compras y MKT. Respaldo de las otras.
-spanning-tree mode pvst
-spanning-tree vlan 67,68 root primary
-spanning-tree vlan 65,66 root secondary
-
-! --- 3. INTERFAZ DE GESTIÓN ---
-interface vlan 66
- description Management_IP
- ip address 148.60.66.12 255.255.255.0
- no shutdown
-ip default-gateway 148.60.66.1
-
-! ==========================================
-! 4. CONEXIONES FÍSICAS (Ajusta los puertos)
-! ==========================================
-
-! A) UPLINK ROUTER YUM KAAX
-interface GigabitEthernet1/0/1
- description Link_to_Router_YumKaax
- switchport trunk encapsulation dot1q
- switchport mode trunk
- switchport nonegotiate
- no shutdown
-
-! B) ETHERCHANNEL AL SWITCH 1 (Enlace Vertical)
-! Debe coincidir con el grupo 10 del otro lado
-interface range GigabitEthernet1/0/2-3
- description Channel_to_SW1
- channel-group 10 mode desirable
- no shutdown
-!
-interface port-channel 10
- switchport trunk encapsulation dot1q
- switchport mode trunk
- switchport nonegotiate
-
-! C) ETHERCHANNEL AL SWITCH 2
-interface range FastEthernet0/1-2
- description Channel_to_SW2
- channel-group 2 mode desirable
- no shutdown
-!
-interface port-channel 2
- switchport trunk encapsulation dot1q
- switchport mode trunk
- switchport nonegotiate
-
-! D) ETHERCHANNEL AL SWITCH 5
-interface range FastEthernet0/3-4
- description Channel_to_SW5
- channel-group 5 mode desirable
- no shutdown
-!
-interface port-channel 5
- switchport trunk encapsulation dot1q
- switchport mode trunk
- switchport nonegotiate
-
-! E) CONEXIONES SIMPLES A SWITCH 3 Y 4
-interface FastEthernet0/5
- description Link_Simple_to_SW3
- switchport trunk encapsulation dot1q
- switchport mode trunk
- switchport nonegotiate
-
-interface FastEthernet0/6
- description Link_Simple_to_SW4
- switchport trunk encapsulation dot1q
- switchport mode trunk
- switchport nonegotiate
-
-! Seguridad SSH
-username admin secret class
-line vty 0 4
- login local
- transport input ssh
 exit
