@@ -30,7 +30,7 @@ interface range fa0/14-19
  spanning-tree portfast
 
 ! Seguridad SSH 
-username admin secret class
+username admin secret classs
 ip domain-name juanmark.com
 crypto key generate rsa
 1024
