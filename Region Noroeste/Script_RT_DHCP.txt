@@ -1,0 +1,101 @@
+enable
+configure terminal
+hostname RT_DHCP
+no ip domain-lookup
+ipv6 unicast-routing
+
+!Seguridad SSH
+username admin secret class
+ip domain-name juanmark.com
+crypto key generate rsa 
+1024
+ip ssh version 2
+line vty 0 4
+ login local
+ transport input ssh
+ exit
+
+! Excluir IPs
+ip dhcp excluded-address 148.60.5.1 148.60.5.10
+ip dhcp excluded-address 148.60.6.1 148.60.6.10
+ip dhcp excluded-address 148.60.7.1 148.60.7.10
+ip dhcp excluded-address 148.60.9.1 148.60.9.10
+
+!DHCP IPv4 pools
+ip dhcp pool MKT
+ network 148.60.5.0 255.255.255.0
+ default-router 148.60.5.1
+ dns-server 8.8.8.8
+
+ip dhcp pool Ventas
+ network 148.60.6.0 255.255.255.0
+ default-router 148.60.6.1
+ dns-server 8.8.8.8
+
+ip dhcp pool Compras
+ network 148.60.7.0 255.255.255.0
+ default-router 148.60.7.1
+ dns-server 8.8.8.8
+
+ip dhcp pool Gestion
+ network 148.60.9.0 255.255.255.0
+ default-router 148.60.9.1
+ dns-server 8.8.8.8
+
+! DHCP IPv6 
+ipv6 dhcp pool GLOBAL_V6
+ dns-server 2001:4860:4860::8888
+ domain-name juanmark.com
+
+! Subinterfaces (Router-on-a-Stick)
+interface g0/0
+ no shutdown
+
+! VLAN 5: Marketing
+interface g0/0.5
+ encapsulation dot1q 5
+ ip address 148.60.5.1 255.255.255.0
+ ipv6 address 2006:AFEA:B0CA:5::1/64
+ ipv6 enable
+ ipv6 nd other-config-flag 
+ ipv6 dhcp server GLOBAL_V6
+ ipv6 rip JUANMARK_RIP enable
+
+! VLAN 6: Ventas
+interface g0/0.6
+ encapsulation dot1q 6
+ ip address 148.60.6.1 255.255.255.0
+ ipv6 address 2006:AFEA:B0CA:6::1/64
+ ipv6 enable
+ ipv6 nd other-config-flag
+ ipv6 dhcp server GLOBAL_V6
+ ipv6 rip JUANMARK_RIP enable
+
+! VLAN 7: Compras
+interface g0/0.7
+ encapsulation dot1q 7
+ ip address 148.60.7.1 255.255.255.0
+ ipv6 address 2006:AFEA:B0CA:7::1/64
+ ipv6 enable
+ ipv6 nd other-config-flag
+ ipv6 dhcp server GLOBAL_V6
+ ipv6 rip JUANMARK_RIP enable
+
+! VLAN 9: Gestión TI
+interface g0/0.9
+ encapsulation dot1q 9
+ ip address 148.60.9.1 255.255.255.0
+ ipv6 address 2006:AFEA:B0CA:9::1/64
+ ipv6 enable
+ ipv6 nd other-config-flag
+ ipv6 dhcp server GLOBAL_V6
+ ipv6 rip JUANMARK_RIP enable
+
+! Ruteo
+router rip
+ version 2
+ no auto-summary
+ network 148.60.0.0
+
+ipv6 router rip JUANMARK_RIP
+exit

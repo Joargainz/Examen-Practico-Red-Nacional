@@ -1,0 +1,64 @@
+enable
+configure terminal
+hostname VTP_Server
+no ip domain-lookup
+enable secret class
+
+! VTP SERVER
+vtp domain juanmark
+vtp version 2
+vtp mode server
+
+! CREACIÓN DE VLANS
+vlan 5
+ name Marketing
+vlan 6
+ name Ventas
+vlan 7
+ name Compras
+vlan 9
+ name Gestion_TI
+
+! Enlaces Troncales
+! f0/2 Hacia SW2 
+interface f0/2
+ switchport mode trunk
+ no shutdown
+! f0/1 Hacia SW4
+interface f0/1
+ switchport mode trunk
+ no shutdown
+
+! Puertos de Acceso 
+! PC Mkt
+interface range fa0/8-13
+ switchport mode access
+ switchport access vlan 5
+ spanning-tree portfast
+
+! PC Venta
+interface range fa0/3-7
+ switchport mode access
+ switchport access vlan 6
+ spanning-tree portfast
+
+! PC Compras
+interface range fa0/20-24
+ switchport mode access
+ switchport access vlan 7
+ spanning-tree portfast
+
+! Seguridad
+username admin secret class
+ip domain-name juanmark.com
+crypto key generate rsa 
+1024
+line vty 0 4
+ login local
+ transport input ssh
+
+interface range fa0/3-24
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation restrict
+exit
