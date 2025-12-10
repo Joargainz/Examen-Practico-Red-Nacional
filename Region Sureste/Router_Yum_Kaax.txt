@@ -1,0 +1,58 @@
+enable
+configure terminal
+hostname Yum-Kaax
+no ip domain-lookup
+
+! SEGURIDAD Y SSH 
+ip domain-name juanmark.com
+username admin secret class
+crypto key generate rsa  
+1024
+ip ssh version 2
+line vty 0 4
+ login local
+ transport input ssh
+exit
+
+! Subinterfaces (Router-on-a-Stick)
+interface g0/1
+ no shutdown
+
+! VLAN 65: Ventas 
+interface g0/1.65
+ encapsulation dot1q 65
+ ip address 148.60.65.3 255.255.255.0
+ ip helper-address 148.60.66.11
+ standby 65 ip 148.60.65.1
+
+! VLAN 66: TI 
+interface g0/1.66
+ encapsulation dot1q 66
+ ip address 148.60.66.3 255.255.255.0
+ ip helper-address 148.60.66.11
+ standby 66 ip 148.60.66.1
+
+! VLAN 67: Compras 
+interface g0/1.67
+ encapsulation dot1q 67
+ ip address 148.60.67.3 255.255.255.0
+ ip helper-address 148.60.66.11
+ standby 67 ip 148.60.67.1
+ standby 67 priority 110
+ standby 67 preempt
+
+! VLAN 68: MKT 
+interface g0/1.68
+ encapsulation dot1q 68
+ ip address 148.60.68.3 255.255.255.0
+ ip helper-address 148.60.66.11
+ standby 68 ip 148.60.68.1
+ standby 68 priority 110
+ standby 68 preempt
+
+! RUTEO
+router rip
+ version 2
+ no auto-summary
+ network 148.60.0.0
+exit

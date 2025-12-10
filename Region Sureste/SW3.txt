@@ -1,0 +1,50 @@
+enable
+configure terminal
+hostname SW3
+no ip domain-lookup
+
+! VTP modo Cliente
+vtp domain juanmark
+vtp version 2
+vtp mode client
+
+! Spanning Tree
+spanning-tree mode pvst
+
+! ETHERCHANNEL hacia switch 2 (Capa 3)
+interface range GigabitEthernet1/0/10-11
+ channel-group 3 mode desirable
+ no shutdown
+
+interface port-channel 3
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+
+! Troncales hacia otros switches (Capa 2 y Capa 3)
+interface range GigabitEthernet1/0/5-6,GigabitEthernet1/0/8-9
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+
+! GESTIÓN IP
+interface vlan 66
+ ip address 148.60.66.15 255.255.255.0
+ no shutdown
+exit
+
+! HSRP
+ip default-gateway 148.60.66.1
+
+! SEGURIDAD SSH 
+ip domain-name juanmark.com
+username admin secret class
+crypto key generate rsa
+1024
+ip ssh version 2
+line vty 0 4
+ login local
+ transport input ssh
+exit

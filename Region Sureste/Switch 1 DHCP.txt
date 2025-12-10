@@ -1,0 +1,118 @@
+enable
+configure terminal
+hostname SW1-DHCP
+no ip domain-lookup
+
+!  VTP Server y VLANs
+vtp domain juanmark
+vtp version 2
+vtp mode server
+vlan 65
+ name Ventas
+vlan 66
+ name TI
+vlan 67
+ name Compras
+vlan 68
+ name MKT
+exit
+
+! STP
+spanning-tree mode pvst
+spanning-tree vlan 65,66 root primary
+spanning-tree vlan 67,68 root secondary
+
+! SERVIDOR DHCP
+service dhcp
+ip dhcp excluded-address 148.60.65.1 148.60.65.10
+ip dhcp excluded-address 148.60.66.1 148.60.66.20
+ip dhcp excluded-address 148.60.67.1 148.60.67.10
+ip dhcp excluded-address 148.60.68.1 148.60.68.10
+
+! Pools
+ip dhcp pool Ventas
+ network 148.60.65.0 255.255.255.0
+ default-router 148.60.65.1
+ dns-server 8.8.8.8
+
+ip dhcp pool TI
+ network 148.60.66.0 255.255.255.0
+ default-router 148.60.66.1
+ dns-server 8.8.8.8
+
+ip dhcp pool Compras
+ network 148.60.67.0 255.255.255.0
+ default-router 148.60.67.1
+ dns-server 8.8.8.8
+
+ip dhcp pool MKT
+ network 148.60.68.0 255.255.255.0
+ default-router 148.60.68.1
+ dns-server 8.8.8.8
+
+! INTERFAZ DE GESTIÓN 
+interface vlan 66
+ ip address 148.60.66.11 255.255.255.0
+ no shutdown
+ip default-gateway 148.60.66.1
+
+! CONEXIONES FÍSICAS
+! Troncal para el  ROUTER ITZAMNÁ
+interface GigabitEthernet1/0/1
+ switchport mode trunk
+ switchport nonegotiate
+ no shutdown
+
+! WLC 
+interface GigabitEthernet1/0/24
+ switchport mode trunk
+ switchport trunk native vlan 66
+ no shutdown
+
+! ETHERCHANNEL AL SWITCH 0 
+interface range GigabitEthernet1/0/2-3
+ channel-group 10 mode desirable
+ no shutdown
+
+interface port-channel 10
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+
+! ETHERCHANNEL AL SWITCH 2
+interface range GigabitEthernet1/0/4-5
+ channel-group 2 mode desirable
+ no shutdown
+
+interface port-channel 2
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+
+! ETHERCHANNEL AL SWITCH 5
+interface range GigabitEthernet1/0/6-7
+ channel-group 5 mode desirable
+ no shutdown
+
+interface port-channel 5
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+
+! Troncal al switch 3 y 4
+interface GigabitEthernet1/0/8
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+
+interface GigabitEthernet1/0/9
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+
+! Seguridad SSH
+username admin secret class
+line vty 0 4
+ login local
+ transport input ssh
+exit

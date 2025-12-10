@@ -1,0 +1,91 @@
+enable
+configure terminal
+hostname SW0
+no ip domain-lookup
+
+! VTP (CLIENTE)
+vtp domain juanmark
+vtp version 2
+vtp mode client
+
+! STP 
+spanning-tree mode pvst
+spanning-tree vlan 67,68 root primary
+spanning-tree vlan 65,66 root secondary
+
+! INTERFAZ DE GESTIÓN 
+interface vlan 66
+ ip address 148.60.66.12 255.255.255.0
+ no shutdown
+
+! Gateway apunta a la IP Virtual HSRP de los routers
+ip default-gateway 148.60.66.1
+
+! CONEXIONES FÍSICAS 
+! Troncal para ROUTER YUM KAAX
+interface GigabitEthernet1/0/1
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+
+! ETHERCHANNEL AL SWITCH 1
+interface range GigabitEthernet1/0/2-3
+ channel-group 10 mode desirable
+ no shutdown
+
+interface port-channel 10
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+
+! ETHERCHANNEL AL SWITCH 2 
+interface range GigabitEthernet1/0/6-7
+ channel-group 2 mode desirable
+ no shutdown
+
+interface port-channel 2
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+
+! ETHERCHANNEL AL SWITCH 5
+interface range GigabitEthernet1/0/4-5
+ channel-group 5 mode desirable
+ no shutdown
+
+interface port-channel 5
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+
+! Troncal al SWITCH 3
+interface range GigabitEthernet1/0/9
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+
+! Troncal al SWITCH 4
+interface range GigabitEthernet1/0/8
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+
+! SEGURIDAD
+! Apagar puertos no usados
+interface range GigabitEthernet1/0/10-24
+ shutdown
+
+! Seguridad SSH
+no ip domain-lookup
+ip domain-name juanmark.com
+username admin secret class
+crypto key generate rsa 
+1024
+ip ssh version 2
+line vty 0 4
+ login local
+ transport input ssh
+exit

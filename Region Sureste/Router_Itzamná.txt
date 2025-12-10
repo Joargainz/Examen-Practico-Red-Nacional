@@ -1,0 +1,57 @@
+enable
+configure terminal
+hostname Itzamna
+no ip domain-lookup
+
+!Seguridad SSH
+ip domain-name juanmark.com
+username admin secret class
+crypto key generate rsa 
+1024
+ip ssh version 2
+line vty 0 4
+ login local
+ transport input ssh
+exit
+
+! SUBINTERFACES (ROUTER ON A STICK)
+interface g0/0
+ no shutdown
+
+! VLAN Ventas 
+interface g0/0.65
+ encapsulation dot1q 65
+ ip address 148.60.65.2 255.255.255.0
+ ip helper-address 148.60.66.11
+ standby 65 ip 148.60.65.1
+ standby 65 priority 110
+ standby 65 preempt
+
+! VLAN TI 
+interface g0/0.66
+ encapsulation dot1q 66
+ ip address 148.60.66.2 255.255.255.0
+ ip helper-address 148.60.66.11
+ standby 66 ip 148.60.66.1
+ standby 66 priority 110
+ standby 66 preempt
+
+! VLAN Compras 
+interface g0/0.67
+ encapsulation dot1q 67
+ ip address 148.60.67.2 255.255.255.0
+ ip helper-address 148.60.66.11
+ standby 67 ip 148.60.67.1
+
+! VLAN MKT 
+interface g0/0.68
+ encapsulation dot1q 68
+ ip address 148.60.68.2 255.255.255.0
+ ip helper-address 148.60.66.11
+ standby 68 ip 148.60.68.1
+
+! RUTEO
+router rip
+ version 2
+ no auto-summary
+ network 148.60.0.0

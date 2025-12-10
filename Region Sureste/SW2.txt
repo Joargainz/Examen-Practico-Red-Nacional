@@ -1,0 +1,77 @@
+enable
+configure terminal
+hostname SW2
+no ip domain-lookup
+
+! VTP (CLIENTE)
+vtp domain juanmark
+vtp version 2
+vtp mode client
+
+! STP
+spanning-tree mode pvst
+
+! ETHERCHANNELS 
+! EtherChannel hacia SWITCH 1 
+interface range GigabitEthernet1/0/4-5
+ channel-group 2 mode desirable
+ no shutdown
+
+interface port-channel 2
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+
+! EtherChannel hacia SWITCH 0
+interface range GigabitEthernet1/0/6-7
+ channel-group 2 mode desirable
+ no shutdown
+ 
+interface port-channel 2
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+
+! EtherChannel hacia SWITCH 3 
+interface range GigabitEthernet1/0/10-11
+ channel-group 3 mode desirable
+ no shutdown
+
+interface port-channel 3
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+
+
+! 4. CONEXIONES A SWITCHES DE ACCESO (Derecha)
+
+! Troncal hacia Switch 3 (Capa 2)
+interface GigabitEthernet1/0/8
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+
+! Troncal hacia Switch 2 (Capa 2)
+interface GigabitEthernet1/0/1
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+
+! SEGURIDAD 
+! Apagar puertos no usados
+interface range GigabitEthernet1/0/12-24,GigabitEthernet1/0/2-3,GigabitEthernet1/0/9
+ shutdown
+
+! Configuración SSH
+no ip domain-lookup
+ip domain-name juanmark.com
+username admin secret class
+crypto key generate rsa 
+1024
+ip ssh version 2
+line vty 0 4
+ login local
+ transport input ssh
+exit
