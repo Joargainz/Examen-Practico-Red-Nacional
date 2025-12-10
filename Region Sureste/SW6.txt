@@ -1,0 +1,69 @@
+enable
+configure terminal
+
+no ip domain-lookup
+
+hostname SW6
+
+interface vlan 66
+ ip address 148.60.66.13 255.255.255.0
+ no shutdown
+ exit
+ip default-gateway 148.60.66.1
+
+! Access Point
+interface FastEthernet0/24
+ switchport mode access
+ switchport access vlan 65
+ spanning-tree portfast
+ no shutdown
+
+
+! Troncales hacia switches de capa 3
+interface range GigabitEthernet0/1-2
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+ exit
+
+! Configurar VTP
+vtp domain juanmark
+vtp version 2
+vtp mode client
+
+! Seguridad SSH
+ip domain-name juanmark.com
+username admin secret class
+crypto key generate rsa
+1024
+ip ssh version 2
+line vty 0 4
+ login local
+ transport input ssh
+ exit
+
+! Asignación de Puertos
+interface range FastEthernet0/1-5
+ switchport mode access
+ switchport access vlan 65
+ spanning-tree portfast
+ exit
+
+interface range FastEthernet0/6-10
+ switchport mode access
+ switchport access vlan 66
+ spanning-tree portfast
+ exit
+
+interface range FastEthernet0/11-15
+ switchport mode access
+ switchport access vlan 67
+ spanning-tree portfast
+ exit
+
+interface range FastEthernet0/16-20
+ switchport mode access
+ switchport access vlan 68
+ spanning-tree portfast
+ exit

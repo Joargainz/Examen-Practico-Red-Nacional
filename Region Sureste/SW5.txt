@@ -1,0 +1,75 @@
+enable
+configure terminal
+hostname SW5
+no ip domain-lookup
+
+! VTP
+vtp domain juanmark
+vtp version 2
+vtp mode client
+
+!Spanning Tree
+spanning-tree mode pvst
+
+! ETHERCHANNELS 
+! Hacia SW1
+interface port-channel 5
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+interface range g1/0/1-2
+ channel-group 5 mode desirable
+ no shutdown
+
+! Hacia SW0
+interface port-channel 6
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+interface range g1/0/3-4
+ channel-group 6 mode desirable
+ no shutdown
+
+! Hacia SW4
+interface port-channel 4
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+interface range g1/0/2-3
+ channel-group 4 mode desirable
+ no shutdown
+
+! CONEXIONES A SWITCHES DE ACCESO
+
+! Troncal hacia el switch 0 y 1 (Capa 2)
+interface range g1/0/8, g1/0/1
+ switchport mode trunk
+ switchport trunk allowed vlan 65-68
+ switchport nonegotiate
+ no shutdown
+
+
+! GESTIÓN IP
+interface vlan 66
+ ip address 148.60.66.14 255.255.255.0
+ no shutdown
+ip default-gateway 148.60.66.1
+
+! SEGURIDAD SSH
+! Apagamos puertos que no necesitamos
+interface range g1/0/9-24
+ shutdown
+
+! Config SSH
+ip domain-name juanmark.com
+username admin secret class
+crypto key generate rsa
+1024
+ip ssh version 2
+line vty 0 4
+ login local
+ transport input ssh
+exit
